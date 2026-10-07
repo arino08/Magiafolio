@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Validation Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
+           font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #f1f3f6; color: #1f2937; }
+    .card { width: 440px; max-width: 100%; background: #fff; border-radius: 10px;
+            box-shadow: 0 4px 18px rgba(0,0,0,.10); padding: 24px; }
+    h1 { font-size: 20px; margin: 0 0 14px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tabs button { flex: 1; padding: 9px; border: 1px solid #d1d5db; background: #f9fafb;
+                   border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .tabs button.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+    input[type=text], input[type=email], input[type=password], input[type=tel], input[type=date] {
+      width: 100%; padding: 9px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+    input.invalid { border-color: #dc2626; background: #fef2f2; }
+    input.valid { border-color: #16a34a; background: #f0fdf4; }
+    .error { color: #dc2626; font-size: 12px; min-height: 16px; margin-top: 3px; }
+    .check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; }
+    .btn { width: 100%; margin-top: 14px; padding: 10px; border: 0; border-radius: 6px;
+           background: #2563eb; color: #fff; font-size: 15px; cursor: pointer; }
+    .banner { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; }
+    .banner.ok { display: block; background: #dcfce7; color: #166534; }
+    .banner.bad { display: block; background: #fee2e2; color: #991b1b; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Account Portal</h1>
+    <div class="tabs">
+      <button id="tab-login" class="active" type="button">Login</button>
+      <button id="tab-signup" type="button">Sign up</button>
+    </div>
+
+    <form id="login-form" novalidate>
+      <label for="l-id">Email or username</label>
+      <input id="l-id" name="id" type="text" placeholder="you@example.com or username">
+      <div class="error" data-for="l-id"></div>
+      <label for="l-pw">Password</label>
+      <input id="l-pw" name="pw" type="password" placeholder="Enter password">
+      <div class="error" data-for="l-pw"></div>
+      <button class="btn" type="submit">Login</button>
+      <div id="login-msg" class="banner"></div>
+    </form>
+
+    <form id="signup-form" class="hidden" novalidate>
+      <label for="s-user">Username</label>
+      <input id="s-user" type="text" placeholder="3-16 letters, digits or _">
+      <div class="error" data-for="s-user"></div>
+      <label for="s-email">Email</label>
+      <input id="s-email" type="email" placeholder="you@example.com">
+      <div class="error" data-for="s-email"></div>
+      <label for="s-phone">Phone</label>
+      <input id="s-phone" type="tel" placeholder="10 digit mobile number">
+      <div class="error" data-for="s-phone"></div>
+      <label for="s-dob">Date of birth</label>
+      <input id="s-dob" type="date">
+      <div class="error" data-for="s-dob"></div>
+      <label for="s-pw">Password</label>
+      <input id="s-pw" type="password" placeholder="Min 8 chars, upper, lower, digit, symbol">
+      <div class="error" data-for="s-pw"></div>
+      <label for="s-pw2">Confirm password</label>
+      <input id="s-pw2" type="password" placeholder="Repeat password">
+      <div class="error" data-for="s-pw2"></div>
+      <div class="check"><input id="s-terms" type="checkbox"><label for="s-terms" style="margin:0;font-weight:400">I accept the terms and conditions</label></div>
+      <div class="error" data-for="s-terms"></div>
+      <button class="btn" type="submit">Create account</button>
+      <div id="signup-msg" class="banner"></div>
+    </form>
+  </main>
+
+<script>
+  // ---------- validators: each returns "" when valid, otherwise an error message ----------
+  const rules = {
+    username: v => /^[A-Za-z0-9_]{3,16}$/.test(v) ? "" : "Username must be 3-16 letters, digits or underscores",
+    email:    v => /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(v) ? "" : "Enter a valid email address",
+    phone:    v => /^[6-9]\d{9}$/.test(v) ? "" : "Phone must be 10 digits and start with 6-9",
+    dob: v => {
+      if (!v) return "Date of birth is required";
+      const d = new Date(v), now = new Date();
+      if (isNaN(d) || d > now) return "Enter a valid past date";
+      let age = now.getFullYear() - d.getFullYear();
+      const m = now.getMonth() - d.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+      return age >= 13 ? "" : "You must be at least 13 years old";
+    },
+    password: v => {
+      if (v.length < 8) return "Password must be at least 8 characters";
+      if (!/[a-z]/.test(v) || !/[A-Z]/.test(v)) return "Use both uppercase and lowercase letters";
+      if (!/\d/.test(v)) return "Add at least one digit";
+      if (!/[^A-Za-z0-9]/.test(v)) return "Add at least one special character";
+      return "";
+    },
+    confirm: (v, all) => v === all.password && v !== "" ? "" : "Passwords do not match",
+    terms: v => v ? "" : "You must accept the terms"
+  };
+
+  const $ = id => document.getElementById(id);
+  function show(id, msg) {
+    const el = $(id);
+    document.querySelector('[data-for="' + id + '"]').textContent = msg;
+    if (el.type !== "checkbox") el.className = msg ? "invalid" : "valid";
+    return !msg;
+  }
+
+  // ---------- sign-up ----------
+  const signup = $("signup-form");
+  const readSignup = () => ({
+    username: $("s-user").value.trim(), email: $("s-email").value.trim(),
+    phone: $("s-phone").value.trim(), dob: $("s-dob").value,
+    password: $("s-pw").value, confirm: $("s-pw2").value, terms: $("s-terms").checked
+  });
+  function validateSignup() {
+    const d = readSignup();
+    const results = [
+      show("s-user",  rules.username(d.username)),
+      show("s-email", rules.email(d.email)),
+      show("s-phone", rules.phone(d.phone)),
+      show("s-dob",   rules.dob(d.dob)),
+      show("s-pw",    rules.password(d.password)),
+      show("s-pw2",   rules.confirm(d.confirm, d)),
+      show("s-terms", rules.terms(d.terms))
+    ];
+    return results.every(Boolean);
+  }
+  signup.addEventListener("submit", e => {
+    e.preventDefault();
+    const banner = $("signup-msg");
+    if (validateSignup()) { banner.className = "banner ok"; banner.textContent = "Account created successfully. All inputs passed validation."; }
+    else { banner.className = "banner bad"; banner.textContent = "Please fix the highlighted fields and try again."; }
+  });
+  // live validation after the user leaves a field
+  [["s-user","username"],["s-email","email"],["s-phone","phone"],["s-dob","dob"],["s-pw","password"]].forEach(([id, key]) =>
+    $(id).addEventListener("blur", () => show(id, rules[key]($(id).value.trim()))));
+
+  // ---------- login ----------
+  $("login-form").addEventListener("submit", e => {
+    e.preventDefault();
+    const idv = $("l-id").value.trim(), pw = $("l-pw").value;
+    const okId = show("l-id", !idv ? "Enter your email or username"
+                       : (rules.email(idv) === "" || rules.username(idv) === "") ? "" : "Not a valid email or username");
+    const okPw = show("l-pw", pw ? "" : "Enter your password");
+    const banner = $("login-msg");
+    if (okId && okPw) { banner.className = "banner ok"; banner.textContent = "Input accepted. Sending credentials to the server..."; }
+    else { banner.className = "banner bad"; banner.textContent = "Login blocked: fix the errors above."; }
+  });
+
+  // ---------- tabs ----------
+  function tab(which) {
+    $("login-form").classList.toggle("hidden", which !== "login");
+    $("signup-form").classList.toggle("hidden", which !== "signup");
+    $("tab-login").classList.toggle("active", which === "login");
+    $("tab-signup").classList.toggle("active", which === "signup");
+  }
+  $("tab-login").onclick = () => tab("login");
+  $("tab-signup").onclick = () => tab("signup");
+</script>
+</body>
+</html>
